@@ -1,6 +1,6 @@
 from flask import Flask 
 from flask_sqlalchemy import SQLAlchemy
-from flask_restful import Resource, Api, reqparse, fields, marshall_with, abort
+from flask_restful import Resource, Api, marshal_with, reqparse, fields, marshall_with, abort
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -19,10 +19,26 @@ user_args = reqparse.RequestParser()
 user_args.add_arguement('name', type=str, required=True, help="Name can't be blank!")
 user_args.add_argument('email', type=str, required=True, help="Email can't be blank!" )
 
+userFields = {
+    'id': fields.Integer,
+    'name': fields.String,
+    'email': fields.String,
+}
+
 class Users(Resource):
+    @marshal_with(userFields)
     def get(self):
         users = UserModel.query.all()
         return users
+
+    @marshal_with(userFields)
+    def post(self):
+        args = user_args.parse_args()
+        user = UserModel(name=args["name"], email=args["email"])
+        db.session.add(user)
+        db.session.commit()
+        users = UserModel.query.all()
+        return users, 201
 
 api.add_resource(Users, '/api/users/')
 
